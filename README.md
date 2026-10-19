@@ -1,12 +1,14 @@
 # 📝 Full-Stack Blog 全栈个人博客
 
-基于 **Vue3 + Node.js/Express + MySQL** 的前后端分离个人博客系统。实现了完整的用户鉴权、文章与评论管理、音乐板块以及管理员后台，采用 JWT 无状态鉴权 + bcrypt 密码加密。
+基于 **原生 JS + Node.js/Express + MySQL** 的个人博客系统。实现了用户注册登录、文章与评论管理、音乐板块以及管理员后台，前端为单页应用，后端提供 RESTful API。
 
-> 技术栈：Vue3 ｜ Element Plus ｜ Pinia ｜ Node.js ｜ Express ｜ MySQL ｜ JWT ｜ bcrypt ｜ RESTful API
+> 技术栈：原生 HTML/CSS/JavaScript ｜ Fetch API ｜ Node.js ｜ Express ｜ MySQL（mysql2 连接池）｜ RESTful API
 
 ---
 
 ## 🖥 界面预览
+
+> 以下截图来自完整版前端（Vue3 + Element Plus 版本），当前仓库内置的是原生 JS 单页版本，视觉细节略有差异。
 
 ### 首页 · 文章列表
 
@@ -31,9 +33,9 @@
 ## ✨ 核心功能
 
 ### 用户与权限
-- 用户注册 / 登录 / 退出，JWT 无状态鉴权，登录态本地持久化
-- bcrypt 加盐哈希加密存储密码，数据库不存明文
-- **角色权限（RBAC）**：`admin` 管理员与 `user` 普通用户分级，后端接口校验角色，非管理员无法访问后台
+- 用户注册 / 登录，登录态保存在浏览器本地（`localStorage`）
+- 密码当前为**演示用明文存储**，接口未做哈希处理
+- **角色区分**：`user` 表中 `role` 字段区分 `admin` 与普通用户，后台接口按传入的 `role` 判断权限
 
 ### 文章模块
 - 文章发布、编辑、删除、查看（完整 CRUD）
@@ -58,10 +60,10 @@
 
 | 端 | 技术 |
 | --- | --- |
-| 前端 | Vue3（组合式 API）、Vue Router、Pinia、Axios、Element Plus |
-| 后端 | Node.js、Express、JWT、bcrypt、cors、dotenv |
-| 数据库 | MySQL（云端托管，SSL 连接） |
-| 工程化 | Git / GitHub、.env 环境变量管理 |
+| 前端 | 原生 HTML / CSS / JavaScript 单页（`index.html`）、Fetch API、`localStorage` |
+| 后端 | Node.js、Express 5、cors、mysql2 连接池 |
+| 数据库 | MySQL（库名 `blog_db`，utf8mb4） |
+| 工程化 | Git / GitHub、SQL 初始化与种子脚本 |
 
 ---
 
@@ -89,6 +91,7 @@ node app.js
 
 - [ ] 用户个人主页与头像上传
 - [ ] 作者本人权限校验（仅作者可编辑自己文章）
+- [ ] 引入 bcrypt 哈希 + 服务端会话/JWT，替换明文密码与 `role` 参数鉴权
 - [ ] 深浅主题切换
 - [ ] XSS 防护与表单双重校验
 
