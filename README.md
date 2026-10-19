@@ -68,14 +68,20 @@
 ## 🚀 快速启动
 
 ```bash
-# 后端
-cd server && npm install && npm start
+# 1. 安装依赖
+npm install
 
-# 前端
-cd client && npm install && npm run dev
+# 2. 初始化数据库（默认库名 blog_db，连接配置见 db.js）
+mysql -u root -p < init.sql
+
+# 3. 启动服务（前端页面与接口同一端口）
+node app.js
 ```
 
-> 需配置 `.env` 中的数据库连接与 JWT 密钥。
+启动后访问 <http://localhost:3000>，接口前缀为 `/api`。
+
+> 数据库连接信息在 `db.js` 中配置（host / user / password / database）；
+> 示例文章可通过 `seed_articles.sql` 导入。
 
 ---
 
