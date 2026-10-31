@@ -1,15 +1,19 @@
 {
   "name": "blog-sever",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "个人博客：Node.js + Express + MySQL",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "migrate": "node migrate.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.3.0",

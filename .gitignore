@@ -1,2 +1,5 @@
 node_modules/
 *.log
+
+# 本地令牌签名密钥（不要提交）
+.auth-secret

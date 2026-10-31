@@ -442,6 +442,14 @@
   let currentBlog = null;
   let viewingUserId = null;
   let currentUser = JSON.parse(sessionStorage.getItem('blog_user') || 'null');
+  let authToken = sessionStorage.getItem('blog_token') || '';
+  // 旧会话没有令牌，视为未登录，避免“显示已登录但接口 401”
+  if (currentUser && !authToken) { currentUser = null; sessionStorage.removeItem('blog_user'); }
+  function authHeaders(extra) {
+    const h = Object.assign({}, extra || {});
+    if (authToken) h['Authorization'] = 'Bearer ' + authToken;
+    return h;
+  }
 
   window.onload = function() { updateNav(); loadCategories(); loadBlogs(); };
 
@@ -567,8 +575,8 @@
     const content = document.getElementById('commentText').value.trim();
     if (!content) { alert('评论内容不能为空'); return; }
     const res = await fetch(API + '/comments', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({article_id:currentId, username:currentUser.username, content})
+      method: 'POST', headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({article_id:currentId, content})
     });
     const data = await res.json();
     alert(data.msg);
@@ -603,16 +611,16 @@
     if (!content) { alert('内容不能为空！'); return; }
     let res, data;
     if (isEditMode) {
-      res = await fetch(API+'/blogs/'+currentId, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,content,category,tags,author_id:currentUser.id})});
+      res = await fetch(API+'/blogs/'+currentId, {method:'PUT',headers:authHeaders({'Content-Type':'application/json'}),body:JSON.stringify({title,content,category,tags})});
     } else {
-      res = await fetch(API+'/blogs', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,content,category,tags,author_id:currentUser.id,author_name:currentUser.username})});
+      res = await fetch(API+'/blogs', {method:'POST',headers:authHeaders({'Content-Type':'application/json'}),body:JSON.stringify({title,content,category,tags})});
     }
     data = await res.json(); alert(data.msg);
     if (data.code===200) showList();
   }
   async function deleteCurrent() {
     if (!confirm('确定要删除这篇文章吗？')) return;
-    const res = await fetch(API+'/blogs/'+currentId+'?author_id='+currentUser.id, {method:'DELETE'});
+    const res = await fetch(API+'/blogs/'+currentId, {method:'DELETE', headers: authHeaders()});
     const data = await res.json(); alert(data.msg);
     if (data.code===200) showList();
   }
@@ -640,7 +648,8 @@
     document.getElementById('profileMeta').textContent = '📅 注册于 ' + formatTime(u.create_time);
     const actionsEl = document.getElementById('profileActions');
     if (currentUser && currentUser.id === uid) {
-      actionsEl.innerHTML = `<button class="btn btn-primary" onclick="showEditProfile()">⚙️ 编辑资料</button>`;
+      actionsEl.innerHTML = `<button class="btn btn-primary" onclick="showEditProfile()">⚙️ 编辑资料</button>
+        <button class="btn btn-outline" style="margin-left:8px;" onclick="changePassword()">🔑 修改密码</button>`;
     } else {
       actionsEl.innerHTML = '';
     }
@@ -665,7 +674,7 @@
 
   async function showEditProfile() {
     if (!currentUser) { showLogin(); return; }
-    const res = await fetch(API + '/user/profile?user_id=' + currentUser.id);
+    const res = await fetch(API + '/user/profile', {headers: authHeaders()});
     const data = await res.json();
     if (data.code === 200) {
       document.getElementById('editAvatar').value = data.data.avatar_url || '';
@@ -680,8 +689,8 @@
     const bio = document.getElementById('editBio').value.trim();
     const avatar_url = document.getElementById('editAvatar').value.trim();
     const res = await fetch(API + '/user/profile', {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({user_id: currentUser.id, nickname, bio, avatar_url})
+      method: 'PUT', headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({nickname, bio, avatar_url})
     });
     const data = await res.json();
     alert(data.msg);
@@ -709,7 +718,7 @@
     content.innerHTML = '<div class="loading">加载中...</div>';
 
     if (tab === 'users') {
-      const res = await fetch(API + '/admin/users?role=admin');
+      const res = await fetch(API + '/admin/users', {headers: authHeaders()});
       const data = await res.json();
       content.innerHTML = `<div class="admin-table"><table>
         <tr><th>ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>注册时间</th></tr>
@@ -722,7 +731,7 @@
         </tr>`).join('')}
       </table></div>`;
     } else if (tab === 'articles') {
-      const res = await fetch(API + '/admin/articles?role=admin');
+      const res = await fetch(API + '/admin/articles', {headers: authHeaders()});
       const data = await res.json();
       content.innerHTML = `<div class="admin-table"><table>
         <tr><th>ID</th><th>标题</th><th>作者</th><th>分类</th><th>阅读量</th><th>时间</th><th>操作</th></tr>
@@ -737,7 +746,7 @@
         </tr>`).join('')}
       </table></div>`;
     } else if (tab === 'comments') {
-      const res = await fetch(API + '/admin/comments?role=admin');
+      const res = await fetch(API + '/admin/comments', {headers: authHeaders()});
       const data = await res.json();
       content.innerHTML = `<div class="admin-table"><table>
         <tr><th>ID</th><th>文章ID</th><th>用户</th><th>评论内容</th><th>时间</th><th>操作</th></tr>
@@ -755,7 +764,7 @@
 
   async function adminDeleteArticle(id) {
     if (!confirm('确定删除这篇文章吗？')) return;
-    const res = await fetch(API + '/admin/articles/' + id + '?role=admin', {method:'DELETE'});
+    const res = await fetch(API + '/admin/articles/' + id, {method:'DELETE', headers: authHeaders()});
     const data = await res.json();
     alert(data.msg);
     adminTab('articles');
@@ -763,7 +772,7 @@
 
   async function adminDeleteComment(id) {
     if (!confirm('确定删除这条评论吗？')) return;
-    const res = await fetch(API + '/admin/comments/' + id + '?role=admin', {method:'DELETE'});
+    const res = await fetch(API + '/admin/comments/' + id, {method:'DELETE', headers: authHeaders()});
     const data = await res.json();
     alert(data.msg);
     adminTab('comments');
@@ -795,7 +804,7 @@
     const name = document.getElementById('newPlaylistName').value.trim();
     if (!pid) { alert('请输入歌单ID'); return; }
     const res = await fetch(API + '/music', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method: 'POST', headers: authHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({playlist_id: pid, name: name||'我的歌单'})
     });
     const data = await res.json(); alert(data.msg);
@@ -807,7 +816,7 @@
   }
   async function delPlaylist(id) {
     if (!confirm('确定删除这个歌单吗？')) return;
-    const res = await fetch(API + '/music/' + id, {method:'DELETE'});
+    const res = await fetch(API + '/music/' + id, {method:'DELETE', headers: authHeaders()});
     const data = await res.json(); alert(data.msg);
     showMusic();
   }
@@ -819,7 +828,9 @@
     const res = await fetch(API+'/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
     const data = await res.json();
     if (data.code===200) {
-      currentUser = data.data;
+      authToken = data.data.token;
+      currentUser = data.data.user;
+      sessionStorage.setItem('blog_token', authToken);
       sessionStorage.setItem('blog_user', JSON.stringify(currentUser));
       alert('登录成功！欢迎你，'+currentUser.username);
       updateNav(); showList();
@@ -839,7 +850,24 @@
       showLogin();
     }
   }
-  function logout() { currentUser=null; sessionStorage.removeItem('blog_user'); updateNav(); showList(); }
+  async function changePassword() {
+    if (!currentUser) { showLogin(); return; }
+    const oldp = prompt('请输入当前密码');
+    if (!oldp) return;
+    const newp = prompt('请输入新密码（至少6位）');
+    if (!newp) return;
+    if (newp.length < 6) { alert('新密码至少6位'); return; }
+    const again = prompt('再输入一次新密码');
+    if (again !== newp) { alert('两次输入的新密码不一致'); return; }
+    const res = await fetch(API + '/user/password', {
+      method: 'POST', headers: authHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({old_password: oldp, new_password: newp})
+    });
+    const data = await res.json();
+    alert(data.msg);
+    if (data.code === 200) { logout(); showLogin(); }
+  }
+  function logout() { currentUser=null; authToken=''; sessionStorage.removeItem('blog_user'); sessionStorage.removeItem('blog_token'); updateNav(); showList(); }
 
   function showList() { showView('listView'); loadCategories(); loadBlogs(); }
   function showLogin() { showView('loginView'); }

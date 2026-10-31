@@ -11,13 +11,13 @@ USE blog_db;
 CREATE TABLE IF NOT EXISTS user(
   id INT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(50) NOT NULL UNIQUE,
-  password VARCHAR(100) NOT NULL,
+  password VARCHAR(255) NOT NULL,   -- scrypt 哈希（约 168 字符）
   avatar_url VARCHAR(500) DEFAULT '',
   nickname VARCHAR(50) DEFAULT '',
   bio VARCHAR(200) DEFAULT '这个人很懒，什么都没写~'
 );
 
--- 插入管理员账号（IGNORE避免重复插入）
+-- 插入管理员账号（首次登录后密码会自动升级为 scrypt 哈希）
 INSERT IGNORE INTO user(username, password) VALUES('admin', '123456');
 
 -- 3. 博客文章表 blog
